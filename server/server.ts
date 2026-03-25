@@ -28,6 +28,7 @@ const corsOptions = {
     'http://localhost:5173',
     'https://novoprojeto-240700.web.app', // 🔥 Firebase Hosting
     'https://rota-certa-2024.onrender.com', // 🔥 Render Frontend
+    'https://rotaflex-132c3.web.app', // 🔥 Novo Firebase Hosting
     '*' // 🔥 Temporarily allow all origins
   ],
   credentials: true,
