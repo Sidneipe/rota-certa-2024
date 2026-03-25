@@ -76,7 +76,7 @@ export class DriverModel {
 
   // Find by ID with coverage areas
   static async findById(id: string): Promise<Driver | null> {
-    const query = 'SELECT * FROM motoristas WHERE id = ?';
+    const query = 'SELECT * FROM motoristas WHERE id = $1';
     const results = await executeQuery<Driver>(query, [id]);
     return results[0] || null;
   }
@@ -91,31 +91,36 @@ export class DriverModel {
   } = {}): Promise<Driver[]> {
     let query = 'SELECT * FROM motoristas WHERE 1=1';
     const params: any[] = [];
+    let paramIndex = 1;
 
     if (filters.ativo !== undefined) {
-      query += ' AND ativo = ?';
+      query += ` AND ativo = $${paramIndex}`;
       params.push(filters.ativo);
+      paramIndex++;
     }
 
     if (filters.cidade) {
-      query += ' AND cidade LIKE ?';
+      query += ` AND cidade LIKE $${paramIndex}`;
       params.push(`%${filters.cidade}%`);
+      paramIndex++;
     }
 
     if (filters.bairro) {
-      query += ' AND bairro LIKE ?';
+      query += ` AND bairro LIKE $${paramIndex}`;
       params.push(`%${filters.bairro}%`);
+      paramIndex++;
     }
 
     query += ' ORDER BY nome ASC';
 
     if (filters.limit) {
-      query += ' LIMIT ?';
+      query += ` LIMIT $${paramIndex}`;
       params.push(filters.limit);
+      paramIndex++;
     }
 
     if (filters.offset) {
-      query += ' OFFSET ?';
+      query += ` OFFSET $${paramIndex}`;
       params.push(filters.offset);
     }
 
