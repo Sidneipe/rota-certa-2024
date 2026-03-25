@@ -1,0 +1,55 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Deploy to Firebase Hosting Preview
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          channelId: pr-${{ github.event.number }}
+          projectId: rotaflex-132c3
+          
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            
+            const pull = pulls.find(p => p.number === context.issue.number);
+            if (pull) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `🚀 **Preview disponível!**\n\nAcesse a versão de preview aqui: https://rotaflex-132c3--pr-${context.issue.number}.web.app\n\nEste preview será atualizado automaticamente a cada novo commit.`
+              });
+            }

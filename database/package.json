@@ -1,0 +1,22 @@
+{
+  "name": "rotaflex-database",
+  "version": "1.0.0",
+  "description": "Scripts para configurar o banco de dados do RotaFlex",
+  "main": "setup-users.js",
+  "scripts": {
+    "setup": "node setup-users.js",
+    "create-tables": "mysql -u root -p rota_certa < create_users_table.sql",
+    "check": "node -e \"const mysql = require('mysql2/promise'); mysql.createConnection({host: 'localhost', user: 'root', password: ''}).then(() => console.log('✅ MySQL conectado'), () => console.log('❌ MySQL não conectado'));\""
+  },
+  "dependencies": {
+    "mysql2": "^3.6.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "mysql",
+    "database",
+    "rotaflex"
+  ],
+  "author": "RotaFlex Team",
+  "license": "MIT"
+}

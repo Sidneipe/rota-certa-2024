@@ -1,0 +1,627 @@
+import { useState, useEffect } from 'react';
+import { Header } from '@/components/Header';
+import { Search, Calendar, Download, Trash2, Eye, FileText, Users, MapPin, X } from 'lucide-react';
+import { ImportedFileService } from '@/services/importedFileService';
+import { RouteGroupService } from '@/services/routeGroupService';
+
+interface ImportedFile {
+  id: number;
+  nome_arquivo: string;
+  tipo_arquivo: 'pdf' | 'xlsx' | 'xls' | 'csv';
+  tamanho_arquivo: number;
+  quantidade_registros: number;
+  data_importacao: string;
+  status_importacao: 'processing' | 'completed' | 'failed';
+}
+
+interface RouteGroup {
+  id: number;
+  nome: string;
+  cor: string;
+  motorista_id?: string;
+  data_criacao: string;
+  ativo: boolean;
+  deliveryCount?: number;
+  completedCount?: number;
+}
+
+const History = () => {
+  const [files, setFiles] = useState<ImportedFile[]>([]);
+  const [routeGroups, setRouteGroups] = useState<RouteGroup[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'files' | 'routes'>('files');
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<ImportedFile | RouteGroup | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Carregando dados do histórico...');
+      
+      const [files, routes] = await Promise.all([
+        ImportedFileService.findAll(),
+        RouteGroupService.findAll()
+      ]);
+      
+      console.log('📄 Arquivos carregados:', files);
+      console.log('🚚 Rotas carregadas:', routes);
+      
+      setFiles(files);
+      setRouteGroups(routes);
+      
+      console.log('✅ Dados carregados:', {
+        files: files.length,
+        routes: routes.length
+      });
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados:', error);
+      alert('Erro ao carregar histórico: ' + (error as any).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredFiles = files.filter(file =>
+    file.nome_arquivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    file.tipo_arquivo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredRoutes = routeGroups.filter(route =>
+    route.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('pt-BR');
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-green-600 bg-green-100';
+      case 'processing': return 'text-yellow-600 bg-yellow-100';
+      case 'failed': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'completed': return 'Concluído';
+      case 'processing': return 'Processando';
+      case 'failed': return 'Erro';
+      default: return status;
+    }
+  };
+
+  const handleViewFile = (file: ImportedFile) => {
+    setSelectedItem(file);
+    setShowViewModal(true);
+  };
+
+  const handleViewRoute = (route: RouteGroup) => {
+    setSelectedItem(route);
+    setShowViewModal(true);
+  };
+
+  const handleDownloadFile = async (file: ImportedFile) => {
+    try {
+      console.log('📥 Baixando arquivo:', file.nome_arquivo);
+      
+      // Simulação de download - em produção, isso buscaria o arquivo real
+      const mockFileContent = `Conteúdo do arquivo: ${file.nome_arquivo}
+Tipo: ${file.tipo_arquivo}
+Tamanho: ${file.tamanho_arquivo} bytes
+Registros: ${file.quantidade_registros}
+Data: ${file.data_importacao}
+Status: ${file.status_importacao}`;
+
+      const blob = new Blob([mockFileContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.nome_arquivo;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Download iniciado');
+    } catch (error) {
+      console.error('❌ Erro ao baixar arquivo:', error);
+      alert('Erro ao baixar arquivo. Tente novamente.');
+    }
+  };
+
+  const handleDownloadRoute = async (route: RouteGroup) => {
+    try {
+      console.log('📥 Baixando rota:', route.nome);
+      
+      // Simulação de download da rota
+      const routeData = {
+        id: route.id,
+        nome: route.nome,
+        cor: route.cor,
+        motorista_id: route.motorista_id,
+        data_criacao: route.data_criacao,
+        deliveryCount: route.deliveryCount,
+        completedCount: route.completedCount,
+        ativo: route.ativo
+      };
+
+      const blob = new Blob([JSON.stringify(routeData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rota_${route.nome.replace(/\s+/g, '_')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Download da rota iniciado');
+    } catch (error) {
+      console.error('❌ Erro ao baixar rota:', error);
+      alert('Erro ao baixar rota. Tente novamente.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Histórico e Consultas</h1>
+          <p className="text-muted-foreground">
+            Visualize e consulte dados de importações anteriores e rotas criadas
+          </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Buscar arquivos ou rotas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'files'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Arquivos Importados</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('routes')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+                activeTab === 'routes'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Grupos de Rotas</span>
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-4 text-muted-foreground">Carregando dados...</p>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'files' && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Arquivo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Tipo
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Tamanho
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Registros
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Data
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-card divide-y divide-border">
+                      {filteredFiles.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                            Nenhum arquivo encontrado
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredFiles.map((file) => (
+                          <tr key={file.id} className="hover:bg-muted/50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <FileText className="w-5 h-5 text-muted-foreground mr-3" />
+                                <span className="text-foreground font-medium">{file.nome_arquivo}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                file.tipo_arquivo === 'pdf' 
+                                  ? 'bg-red-100 text-red-800' 
+                                  : 'bg-green-100 text-green-800'
+                              }`}>
+                                {file.tipo_arquivo.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {formatFileSize(file.tamanho_arquivo)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {file.quantidade_registros}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(file.status_importacao)}`}>
+                                {getStatusText(file.status_importacao)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {formatDate(file.data_importacao)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center space-x-2">
+                                <button 
+                                  onClick={() => handleViewFile(file)}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Visualizar arquivo"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDownloadFile(file)}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Baixar arquivo"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'routes' && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Rota
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Cor
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Entregas
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Concluídas
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Motorista
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Data
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-card divide-y divide-border">
+                      {filteredRoutes.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                            Nenhuma rota encontrada
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredRoutes.map((route) => (
+                          <tr key={route.id} className="hover:bg-muted/50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div 
+                                  className="w-4 h-4 rounded-full mr-3"
+                                  style={{ backgroundColor: route.cor }}
+                                />
+                                <span className="text-foreground font-medium">{route.nome}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div 
+                                  className="w-6 h-6 rounded-full"
+                                  style={{ backgroundColor: route.cor }}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {route.deliveryCount}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span className="text-sm text-muted-foreground mr-2">
+                                  {route.completedCount}
+                                </span>
+                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-green-500 h-2 rounded-full"
+                                    style={{ 
+                                      width: `${route.deliveryCount > 0 ? (route.completedCount / route.deliveryCount) * 100 : 0}%` 
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {route.motorista_id ? (
+                                <div className="flex items-center">
+                                  <Users className="w-4 h-4 mr-1" />
+                                  <span>Atribuído</span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">Não atribuído</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                              {formatDate(route.data_criacao)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex items-center space-x-2">
+                                <button 
+                                  onClick={() => handleViewRoute(route)}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Visualizar rota"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDownloadRoute(route)}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Baixar rota"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+
+    {/* Modal de Visualização */}
+    {showViewModal && selectedItem && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
+          <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {'nome_arquivo' in selectedItem ? 'Detalhes do Arquivo' : 'Detalhes da Rota'}
+            </h2>
+            <button
+              onClick={() => {
+                setShowViewModal(false);
+                setSelectedItem(null);
+              }}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6">
+            {'nome_arquivo' in selectedItem ? (
+              // Visualização de Arquivo
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Arquivo</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as ImportedFile).nome_arquivo}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as ImportedFile).tipo_arquivo.toUpperCase()}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tamanho</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{formatFileSize((selectedItem as ImportedFile).tamanho_arquivo)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Registros</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as ImportedFile).quantidade_registros}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor((selectedItem as ImportedFile).status_importacao)}`}>
+                      {getStatusText((selectedItem as ImportedFile).status_importacao)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data da Importação</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{formatDate((selectedItem as ImportedFile).data_importacao)}</p>
+                </div>
+              </div>
+            ) : (
+              // Visualização de Rota
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Rota</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as RouteGroup).nome}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-6 h-6 rounded-full border border-gray-300"
+                        style={{ backgroundColor: (selectedItem as RouteGroup).cor }}
+                      />
+                      <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as RouteGroup).cor}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Motorista</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {(selectedItem as RouteGroup).motorista_id ? (
+                        <div className="flex items-center">
+                          <Users className="w-4 h-4 mr-1" />
+                          <span>Atribuído</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Não atribuído</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(selectedItem as RouteGroup).ativo ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'}`}>
+                        {(selectedItem as RouteGroup).ativo ? 'Ativa' : 'Inativa'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total de Entregas</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as RouteGroup).deliveryCount || 0}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Entregas Concluídas</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{(selectedItem as RouteGroup).completedCount || 0}</p>
+                  </div>
+                </div>
+                
+                {(selectedItem as RouteGroup).deliveryCount && (selectedItem as RouteGroup).completedCount && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Progresso</label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full"
+                          style={{ 
+                            width: `${(selectedItem as RouteGroup).deliveryCount > 0 ? ((selectedItem as RouteGroup).completedCount / (selectedItem as RouteGroup).deliveryCount) * 100 : 0}%` 
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {(selectedItem as RouteGroup).deliveryCount > 0 ? Math.round(((selectedItem as RouteGroup).completedCount / (selectedItem as RouteGroup).deliveryCount) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data de Criação</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{formatDate((selectedItem as RouteGroup).data_criacao)}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-6 pt-4 border-t">
+              <button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedItem(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Fechar
+              </button>
+              {'nome_arquivo' in selectedItem ? (
+                <button
+                  onClick={() => handleDownloadFile(selectedItem as ImportedFile)}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar Arquivo
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleDownloadRoute(selectedItem as RouteGroup)}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar Rota
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+  );
+};
+
+export default History;
