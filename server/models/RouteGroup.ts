@@ -18,11 +18,7 @@ export interface CreateRouteGroupData {
 export class RouteGroupModel {
   // Create route group
   static async create(data: CreateRouteGroupData): Promise<RouteGroup> {
-    const query = `
-      INSERT INTO grupos_rotas (
-        nome, cor, motorista_id
-      ) VALUES (?, ?, ?)
-    `;
+    const query = 'INSERT INTO grupos_rotas (nome, cor, motorista_id) VALUES ($1, $2, $3)';
     
     const params = [
       data.nome,
