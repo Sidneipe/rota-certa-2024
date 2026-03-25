@@ -139,7 +139,7 @@ export class DriverModel {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       params.push(id);
 
-      const query = `UPDATE motoristas SET ${fields.join(', ')} WHERE id = ?`;
+      const query = 'UPDATE motoristas SET ' + fields.join(', ') + ' WHERE id = $' + (params.length);
       await executeSingleQuery(query, params);
     }
 
@@ -167,7 +167,7 @@ export class DriverModel {
 
   // Get coverage areas for a driver
   static async getCoverageAreas(driverId: string): Promise<CoverageArea[]> {
-    const query = 'SELECT * FROM motoristas_areas_cobertura WHERE motorista_id = $1 ORDER BY cidade, bairro';
+    const query = 'SELECT * FROM areas_cobertura WHERE motorista_id = $1 ORDER BY cidade, bairro';
     return executeQuery<CoverageArea>(query, [driverId]);
   }
 
@@ -176,7 +176,7 @@ export class DriverModel {
     if (areas.length === 0) return;
 
     const placeholders = areas.map(() => '(?, ?, ?)').join(', ');
-    const query = 'INSERT INTO motoristas_areas_cobertura (motorista_id, cidade, bairro, estado) VALUES ' + placeholders;
+    const query = 'INSERT INTO areas_cobertura (motorista_id, cidade, bairro, estado) VALUES ' + placeholders;
 
     const params: any[] = [];
     areas.forEach(area => {
@@ -189,7 +189,7 @@ export class DriverModel {
   // Update coverage areas (replace all)
   static async updateCoverageAreas(driverId: string, areas: Array<{ cidade: string; bairro: string; estado?: string }>): Promise<void> {
     // Delete existing coverage areas
-    await executeSingleQuery('DELETE FROM motoristas_areas_cobertura WHERE motorista_id = ?', [driverId]);
+    await executeSingleQuery('DELETE FROM areas_cobertura WHERE motorista_id = $1', [driverId]);
     
     // Add new coverage areas
     await this.addCoverageAreas(driverId, areas);
@@ -197,7 +197,7 @@ export class DriverModel {
 
   // Remove coverage area
   static async removeCoverageArea(areaId: number): Promise<boolean> {
-    const query = 'DELETE FROM motoristas_areas_cobertura WHERE id = ?';
+    const query = 'DELETE FROM areas_cobertura WHERE id = $1';
     const result = await executeSingleQuery(query, [areaId]);
     return result.affectedRows > 0;
   }
@@ -217,13 +217,13 @@ export class DriverModel {
           )
         ) as coverage_areas_json
       FROM motoristas m
-      LEFT JOIN motoristas_areas_cobertura ac ON m.id = ac.motorista_id
+      LEFT JOIN areas_cobertura ac ON m.id = ac.motorista_id
     `;
 
     const params: any[] = [];
 
     if (driverId) {
-      query += ' WHERE m.id = ?';
+      query += ' WHERE m.id = $1';
       params.push(driverId);
     }
 
