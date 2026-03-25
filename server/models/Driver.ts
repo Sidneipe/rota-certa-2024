@@ -130,7 +130,7 @@ export class DriverModel {
     // Update driver fields
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined && key !== 'coverageAreas') {
-        fields.push(`${key} = $${fields.length + 1}`);
+        fields.push(`${key} = $${params.length + 1}`);
         params.push(value);
       }
     });
