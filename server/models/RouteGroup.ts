@@ -28,8 +28,8 @@ export class RouteGroupModel {
 
     const result = await executeSingleQuery(query, params);
     
-    // Get the inserted ID
-    const insertedId = result.insertId;
+    // Get the inserted ID - PostgreSQL uses different method
+    const insertedId = result.rows[0]?.id;
     
     const routeGroup = await this.findById(insertedId);
     if (!routeGroup) {
@@ -40,7 +40,7 @@ export class RouteGroupModel {
 
   // Find route group by ID
   static async findById(id: number): Promise<RouteGroup | null> {
-    const query = 'SELECT * FROM grupos_rotas WHERE id = ?';
+    const query = 'SELECT * FROM grupos_rotas WHERE id = $1';
     const results = await executeQuery<RouteGroup>(query, [id]);
     return results.length > 0 ? results[0] : null;
   }
