@@ -4,14 +4,14 @@ import { DriverService } from '@/services/driverService';
 import { ImportedFileService } from '@/services/importedFileService';
 import { RouteGroupService } from '@/services/routeGroupService';
 
-// Mantém compatibilidade com o código existente enquanto migra para MySQL
+// Mantém compatibilidade com o código existente enquanto migra para PostgreSQL
 // Este arquivo agora serve como um adaptador para o novo serviço
 
 const STORAGE_KEY = 'rotaflex_deliveries';
 const ROUTES_KEY = 'rotaflex_routes';
 
-// Função de migração para mover dados do localStorage para MySQL
-async function migrateToMySQL(): Promise<void> {
+// Função de migração para mover dados do localStorage para PostgreSQL
+async function migrateToPostgreSQL(): Promise<void> {
   try {
     const localData = localStorage.getItem(STORAGE_KEY);
     const routesData = localStorage.getItem(ROUTES_KEY);
@@ -22,7 +22,7 @@ async function migrateToMySQL(): Promise<void> {
       
       // Migrar entregas
       if (deliveries.length > 0) {
-        console.log(`Migrando ${deliveries.length} entregas do localStorage para MySQL...`);
+        console.log(`Migrando ${deliveries.length} entregas do localStorage para PostgreSQL...`);
         
         try {
           // Mapear entregas para o formato do backend
@@ -198,7 +198,7 @@ export async function updateDelivery(id: string, data: Partial<Delivery>): Promi
       rawData: (updatedDelivery as any).dados_brutos
     };
   } catch (error) {
-    console.error('Erro ao atualizar entrega no MySQL, usando localStorage como fallback:', error);
+    console.error('Erro ao atualizar entrega no PostgreSQL, usando localStorage como fallback:', error);
     
     // Fallback para localStorage
     const deliveries = await getDeliveries();
@@ -232,8 +232,8 @@ export async function saveRouteGroups(groups: RouteGroup[]): Promise<void> {
 
 // Iniciar migração automaticamente quando o módulo for carregado
 if (typeof window !== 'undefined') {
-  migrateToMySQL();
+  migrateToPostgreSQL();
 }
 
 // Exportar função de migração para chamada manual se necessário
-export { migrateToMySQL };
+export { migrateToPostgreSQL };

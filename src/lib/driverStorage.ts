@@ -1,13 +1,13 @@
 import { Driver } from '@/types/delivery';
 import { DriverService } from '@/services/driverService';
 
-// Mantém compatibilidade com o código existente enquanto migra para MySQL
+// Mantém compatibilidade com o código existente enquanto migra para PostgreSQL
 // Este arquivo agora serve como um adaptador para o novo serviço
 
 const STORAGE_KEY = 'rotaflex_drivers';
 
-// Função de migração para mover dados do localStorage para MySQL
-async function migrateToMySQL(): Promise<void> {
+// Função de migração para mover dados do localStorage para PostgreSQL
+async function migrateToPostgreSQL(): Promise<void> {
   try {
     const localData = localStorage.getItem(STORAGE_KEY);
     if (localData) {
@@ -16,7 +16,7 @@ async function migrateToMySQL(): Promise<void> {
       // Migrar apenas se houver dados e se não houver motoristas no MySQL
       const existingDrivers = await DriverService.findAll();
       if (existingDrivers.length === 0 && drivers.length > 0) {
-        console.log(`Migrando ${drivers.length} motoristas do localStorage para MySQL...`);
+        console.log(`Migrando ${drivers.length} motoristas do localStorage para PostgreSQL...`);
         
         for (const driver of drivers) {
           try {
@@ -277,8 +277,8 @@ export async function deleteDriver(id: string): Promise<boolean> {
 
 // Iniciar migração automaticamente quando o módulo for carregado
 if (typeof window !== 'undefined') {
-  migrateToMySQL();
+  migrateToPostgreSQL();
 }
 
 // Exportar função de migração para chamada manual se necessário
-export { migrateToMySQL };
+export { migrateToPostgreSQL };
