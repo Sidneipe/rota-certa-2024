@@ -167,7 +167,7 @@ export class DriverModel {
 
   // Get coverage areas for a driver
   static async getCoverageAreas(driverId: string): Promise<CoverageArea[]> {
-    const query = 'SELECT * FROM motoristas_areas_cobertura WHERE motorista_id = ? ORDER BY cidade, bairro';
+    const query = 'SELECT * FROM motoristas_areas_cobertura WHERE motorista_id = $1 ORDER BY cidade, bairro';
     return executeQuery<CoverageArea>(query, [driverId]);
   }
 
