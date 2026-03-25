@@ -46,11 +46,7 @@ export class DriverModel {
     const id = uuidv4();
     
     // Insert driver
-    const driverQuery = `
-      INSERT INTO motoristas (
-        id, nome, telefone, veiculo, placa, cidade, bairro, estado, ativo
-      ) VALUES (?,?,?,?,?,?,?,?,?)
-    `;
+    const driverQuery = `INSERT INTO motoristas (id, nome, telefone, veiculo, placa, cidade, bairro, estado, ativo) VALUES (?,?,?,?,?,?,?,?,?)`;
     
     const driverParams = [
       id,
