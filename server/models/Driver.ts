@@ -175,7 +175,11 @@ export class DriverModel {
   static async addCoverageAreas(driverId: string, areas: Array<{ cidade: string; bairro: string; estado?: string }>): Promise<void> {
     if (areas.length === 0) return;
 
-    const placeholders = areas.map(() => '(?, ?, ?)').join(', ');
+    const placeholders = areas.map((_, index) => {
+      const baseIndex = index * 4 + 1;
+      return `($${baseIndex}, $${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3})`;
+    }).join(', ');
+    
     const query = 'INSERT INTO areas_cobertura (motorista_id, cidade, bairro, estado) VALUES ' + placeholders;
 
     const params: any[] = [];
