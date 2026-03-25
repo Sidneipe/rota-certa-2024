@@ -49,7 +49,7 @@ export class DriverModel {
     const driverQuery = `
       INSERT INTO motoristas (
         id, nome, telefone, veiculo, placa, cidade, bairro, estado, ativo
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?,?,?,?,?,?,?,?,?)
     `;
     
     const driverParams = [
