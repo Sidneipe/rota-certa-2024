@@ -153,14 +153,14 @@ export class DriverModel {
 
   // Delete driver
   static async delete(id: string): Promise<boolean> {
-    const query = 'DELETE FROM motoristas WHERE id = ?';
+    const query = 'DELETE FROM motoristas WHERE id = $1';
     const result = await executeSingleQuery(query, [id]);
     return result.affectedRows > 0;
   }
 
   // Toggle active status
   static async toggleActive(id: string): Promise<Driver | null> {
-    const query = 'UPDATE motoristas SET ativo = NOT ativo, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+    const query = 'UPDATE motoristas SET ativo = NOT ativo, updated_at = CURRENT_TIMESTAMP WHERE id = $1';
     await executeSingleQuery(query, [id]);
     return this.findById(id);
   }
